@@ -1,0 +1,212 @@
+[
+  {
+    "ru": "кошка",
+    "correct": "cat",
+    "wrong1": "dog",
+    "wrong2": "bird",
+    "wrong3": "fish"
+  },
+  {
+    "ru": "собака",
+    "correct": "dog",
+    "wrong1": "cat",
+    "wrong2": "cow",
+    "wrong3": "horse"
+  },
+  {
+    "ru": "дом",
+    "correct": "house",
+    "wrong1": "car",
+    "wrong2": "tree",
+    "wrong3": "road"
+  },
+  {
+    "ru": "машина",
+    "correct": "car",
+    "wrong1": "plane",
+    "wrong2": "boat",
+    "wrong3": "bike"
+  },
+  {
+    "ru": "дерево",
+    "correct": "tree",
+    "wrong1": "flower",
+    "wrong2": "grass",
+    "wrong3": "bush"
+  },
+  {
+    "ru": "книга",
+    "correct": "book",
+    "wrong1": "pen",
+    "wrong2": "table",
+    "wrong3": "chair"
+  },
+  {
+    "ru": "стол",
+    "correct": "table",
+    "wrong1": "bed",
+    "wrong2": "sofa",
+    "wrong3": "door"
+  },
+  {
+    "ru": "стул",
+    "correct": "chair",
+    "wrong1": "table",
+    "wrong2": "lamp",
+    "wrong3": "floor"
+  },
+  {
+    "ru": "вода",
+    "correct": "water",
+    "wrong1": "juice",
+    "wrong2": "milk",
+    "wrong3": "tea"
+  },
+  {
+    "ru": "огонь",
+    "correct": "fire",
+    "wrong1": "water",
+    "wrong2": "earth",
+    "wrong3": "air"
+  },
+  {
+    "ru": "земля",
+    "correct": "earth",
+    "wrong1": "sky",
+    "wrong2": "fire",
+    "wrong3": "sea"
+  },
+  {
+    "ru": "небо",
+    "correct": "sky",
+    "wrong1": "ground",
+    "wrong2": "cloud",
+    "wrong3": "space"
+  },
+  {
+    "ru": "солнце",
+    "correct": "sun",
+    "wrong1": "moon",
+    "wrong2": "star",
+    "wrong3": "planet"
+  },
+  {
+    "ru": "луна",
+    "correct": "moon",
+    "wrong1": "sun",
+    "wrong2": "star",
+    "wrong3": "comet"
+  },
+  {
+    "ru": "звезда",
+    "correct": "star",
+    "wrong1": "moon",
+    "wrong2": "sun",
+    "wrong3": "cloud"
+  },
+  {
+    "ru": "еда",
+    "correct": "food",
+    "wrong1": "drink",
+    "wrong2": "plate",
+    "wrong3": "kitchen"
+  },
+  {
+    "ru": "время",
+    "correct": "time",
+    "wrong1": "clock",
+    "wrong2": "day",
+    "wrong3": "year"
+  },
+  {
+    "ru": "день",
+    "correct": "day",
+    "wrong1": "night",
+    "wrong2": "week",
+    "wrong3": "month"
+  },
+  {
+    "ru": "ночь",
+    "correct": "night",
+    "wrong1": "day",
+    "wrong2": "evening",
+    "wrong3": "morning"
+  },
+  {
+    "ru": "человек",
+    "correct": "person",
+    "wrong1": "animal",
+    "wrong2": "robot",
+    "wrong3": "child"
+  },
+  {
+    "ru": "ребенок",
+    "correct": "child",
+    "wrong1": "adult",
+    "wrong2": "parent",
+    "wrong3": "teacher"
+  },
+  {
+    "ru": "город",
+    "correct": "city",
+    "wrong1": "village",
+    "wrong2": "country",
+    "wrong3": "street"
+  },
+  {
+    "ru": "улица",
+    "correct": "street",
+    "wrong1": "road",
+    "wrong2": "city",
+    "wrong3": "bridge"
+  },
+  {
+    "ru": "река",
+    "correct": "river",
+    "wrong1": "lake",
+    "wrong2": "sea",
+    "wrong3": "ocean"
+  },
+  {
+    "ru": "море",
+    "correct": "sea",
+    "wrong1": "river",
+    "wrong2": "lake",
+    "wrong3": "pond"
+  },
+  {
+    "ru": "озеро",
+    "correct": "lake",
+    "wrong1": "sea",
+    "wrong2": "river",
+    "wrong3": "ocean"
+  },
+  {
+    "ru": "гора",
+    "correct": "mountain",
+    "wrong1": "hill",
+    "wrong2": "valley",
+    "wrong3": "plain"
+  },
+  {
+    "ru": "лес",
+    "correct": "forest",
+    "wrong1": "park",
+    "wrong2": "field",
+    "wrong3": "garden"
+  },
+  {
+    "ru": "друг",
+    "correct": "friend",
+    "wrong1": "enemy",
+    "wrong2": "stranger",
+    "wrong3": "neighbor"
+  },
+  {
+    "ru": "работа",
+    "correct": "work",
+    "wrong1": "rest",
+    "wrong2": "game",
+    "wrong3": "sleep"
+  }
+]
