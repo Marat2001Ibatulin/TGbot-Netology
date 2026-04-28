@@ -11,17 +11,12 @@ class Word(Base):
     id = sq.Column(sq.Integer, primary_key=True, autoincrement=True)
     russian_word = sq.Column(sq.String(length=40), unique=True)
     target_word = sq.Column(sq.String(length=40))
-    wrong_word1 = sq.Column(sq.String(length=40))
-    wrong_word2 = sq.Column(sq.String(length=40))
-    wrong_word3 = sq.Column(sq.String(length=40))
-
 
 class User(Base):
     __tablename__ = "user"
 
     id = sq.Column(sq.BIGINT, primary_key=True)
     first_name = sq.Column(sq.String(length=40))
-
 
 class UserWord(Base):
     __tablename__ = 'userword'
@@ -37,7 +32,7 @@ class UserWord(Base):
 def create_tables(engine):
     Base.metadata.create_all(engine)
 
-DSN = "postgresql://postgres:{YOURPASSWORD}@localhost:5432/tgbot"
+DSN = "{YOUR DATA}"
 engine = sq.create_engine(DSN)
 create_tables(engine)
 
@@ -49,7 +44,7 @@ if len(session.query(Word).all()) == 0:
         dt = json.load(f)
 
     for i in range(len(dt)):
-        word = Word(russian_word=dt[i]['ru'], target_word=dt[i]['correct'], wrong_word1=dt[i]['wrong1'], wrong_word2=dt[i]['wrong2'], wrong_word3=dt[i]['wrong3'])
+        word = Word(russian_word=dt[i]['ru'], target_word=dt[i]['correct'])
         session.add(word)
 
 def add_user(chat_id, name, session):

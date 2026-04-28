@@ -11,7 +11,7 @@ import requests
 #https://web.telegram.org/a/#8694713273 - ссылка на бота
 
 state_storage = StateMemoryStorage()
-TOKEN = "8694713273:AAHNdgnjahCszCOATcFZv7nsPi4nM0keUw0"
+TOKEN = #token
 bot = TeleBot(TOKEN, state_storage=state_storage)
 
 known_users = []
@@ -65,21 +65,15 @@ def create_cards(message):
     cid = message.chat.id
     markup = types.ReplyKeyboardMarkup(row_width=2)
 
-    words_for_user = []
-    avalible_words = db.session.query(db.Word.russian_word).join(db.UserWord).filter(db.UserWord.user_id==cid).all()
-    for word in avalible_words:
-        words_for_user.append(word[0])
-    subq = db.session.query(db.Word).join(db.UserWord).filter(db.UserWord.user_id==cid, db.Word.russian_word==random.choice(words_for_user)).subquery()
-    translate = db.session.query(subq.c.russian_word).all()[0][0]
-    target_word = db.session.query(subq.c.target_word).all()[0][0]
+    q = db.session.query(db.Word.russian_word, db.Word.target_word).join(db.UserWord).where(db.UserWord.user_id==cid).order_by(db.sq.func.random()).limit(4).all()
+    word_pair = q.pop()
+    target_word = word_pair[1]
+    translate =  word_pair[0]
     global buttons
     buttons = []
     target_word_btn = types.KeyboardButton(target_word)
     buttons.append(target_word_btn)
-    otr1 = db.session.query(subq.c.wrong_word1).all()[0][0]
-    otr2 = db.session.query(subq.c.wrong_word2).all()[0][0]
-    otr3 = db.session.query(subq.c.wrong_word3).all()[0][0]
-    others = [otr1, otr2, otr3]
+    others = [word[1] for word in q]
     other_words_btns = [types.KeyboardButton(word) for word in others]
     buttons.extend(other_words_btns)
     random.shuffle(buttons)
@@ -228,18 +222,9 @@ def process_word(word):
                 add_completed(word)
         else:
             translate_word = GoogleTranslator(source='ru', target='en').translate(russian_word)
-            wrong_words = db.session.query(db.Word.target_word).all()
-            wrong_variants = []
-            while len(wrong_variants) < 3:
-                w = random.choice(wrong_words).target_word
-                if  w not in wrong_variants:
-                    wrong_variants.append(w)
             added_word = db.Word(
                 russian_word=russian_word,
                 target_word=translate_word,
-                wrong_word1=wrong_variants[0],
-                wrong_word2=wrong_variants[1],
-                wrong_word3=wrong_variants[2],
             )
             db.session.add(added_word)
             db.session.commit()
