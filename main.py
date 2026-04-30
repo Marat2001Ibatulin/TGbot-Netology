@@ -2,22 +2,49 @@ import random
 from langdetect import detect
 from telebot.types import  ReplyKeyboardRemove
 import database as db
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, func
 from telebot import types, TeleBot, custom_filters
 from telebot.storage import StateMemoryStorage
 from telebot.handler_backends import State, StatesGroup
 from deep_translator import GoogleTranslator
 import requests
+import json
 
 #https://web.telegram.org/a/#8694713273 - ссылка на бота
 
+DSN = {DNS}
+engine = create_engine(DSN)
+Session = sessionmaker(bind=engine)
+session = Session()
+
+def create_tables():
+    db.Base.metadata.create_all(engine)
+    basic_words()
+
+def basic_words():
+    if len(session.query(db.Word).all()) == 0:
+        with open('words.json', encoding='UTF-8') as f:
+            dt = json.load(f)
+
+        for i in range(len(dt)):
+            word = db.Word(russian_word=dt[i]['ru'], target_word=dt[i]['correct'])
+            session.add(word)
+
+create_tables()
+
+def add_user(chat_id, name):
+    new_user = db.User(id=chat_id, first_name=name)
+    session.add(new_user)
+    q = session.query(db.Word.id).order_by(db.Word.id).limit(30).all() # добавляются только 30 первых общих слов, а не все слова в базе
+    for s in q:
+        new_uw = db.UserWord(user_id=chat_id, word_id=s[0])
+        session.add(new_uw)
+    session.commit()
+
 state_storage = StateMemoryStorage()
-TOKEN = #token
+TOKEN = {TOKEN}
 bot = TeleBot(TOKEN, state_storage=state_storage)
-
-known_users = []
-userStep = {}
-buttons = []
-
 
 def show_hint(*lines):
     return '\n'.join(lines)
@@ -37,39 +64,32 @@ class MyStates(StatesGroup):
     translate_word = State()
     another_words = State()
 
-def get_user_step(uid):
-    if uid in userStep:
-        return userStep[uid]
-    else:
-        known_users.append(uid)
-        userStep[uid] = 0
-        print("New user detected, who hasn't used \"/start\" yet")
-        return 0
-
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.reply_to(message, "Привет. \U0001F600 Я SimpleBot. Давай изучать английские слова! Используй команду /cards для генерации слов и вариантов перевода.")
-    id = message.chat.id
-    if id not in known_users:
-        known_users.append(id)
-        userStep[id] = 0
-    q = db.session.query(db.User.id).all()
+    cid = message.chat.id
+    q = session.query(db.User.id).all()
     for i in q:
         if id in i:
             break
     else:
-        db.add_user(chat_id=id, name=message.from_user.first_name, session=db.session)
+        add_user(chat_id=cid, name=message.from_user.first_name)
 
 @bot.message_handler(commands=['cards'])
 def create_cards(message):
     cid = message.chat.id
     markup = types.ReplyKeyboardMarkup(row_width=2)
-
-    q = db.session.query(db.Word.russian_word, db.Word.target_word).join(db.UserWord).where(db.UserWord.user_id==cid).order_by(db.sq.func.random()).limit(4).all()
+    q = (
+        session
+        .query(db.Word.russian_word, db.Word.target_word)
+        .join(db.UserWord).where(db.UserWord.user_id==cid)
+        .order_by(func.random())
+        .limit(4)
+        .all()
+                        )
     word_pair = q.pop()
     target_word = word_pair[1]
     translate =  word_pair[0]
-    global buttons
     buttons = []
     target_word_btn = types.KeyboardButton(target_word)
     buttons.append(target_word_btn)
@@ -81,9 +101,7 @@ def create_cards(message):
     add_word_btn = types.KeyboardButton(Command.ADD_WORD)
     delete_word_btn = types.KeyboardButton(Command.DELETE_WORD)
     buttons.extend([next_btn, add_word_btn, delete_word_btn])
-
     markup.add(*buttons)
-
     greeting = f"Выбери перевод слова:\n🇷🇺 {translate}"
     bot.send_message(message.chat.id, greeting, reply_markup=markup)
     bot.set_state(message.from_user.id, MyStates.target_word, message.chat.id)
@@ -98,16 +116,20 @@ def next_cards(message):
 
 @bot.message_handler(func=lambda message: message.text == Command.DELETE_WORD)
 def delete_word(message):
-    bot.send_message(message.chat.id,'Слово бодьше не будет показываться для Вас.', reply_markup=ReplyKeyboardRemove())
-    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        buttons =[]
-        markup = types.InlineKeyboardMarkup(row_width=2)
-        yes_btn = types.InlineKeyboardButton(Command.Yes, callback_data='delete_approval')
-        buttons.append(yes_btn)
-        no_btn = types.InlineKeyboardButton(Command.CANCEL, callback_data='delete_cancellation')
-        buttons.append(no_btn)
-        markup.add(*buttons)
-        bot.send_message(message.chat.id, f'Вы уверены, что хотите удалить {data['translate_word']}', reply_markup=markup)
+    count = word_count(message)
+    if count > 4:
+        bot.send_message(message.chat.id,'Слово больше не будет показываться для Вас.', reply_markup=ReplyKeyboardRemove())
+        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+            buttons =[]
+            markup = types.InlineKeyboardMarkup(row_width=2)
+            yes_btn = types.InlineKeyboardButton(Command.Yes, callback_data='delete_approval')
+            buttons.append(yes_btn)
+            no_btn = types.InlineKeyboardButton(Command.CANCEL, callback_data='delete_cancellation')
+            buttons.append(no_btn)
+            markup.add(*buttons)
+            bot.send_message(message.chat.id, f'Вы уверены, что хотите удалить {data['translate_word']}', reply_markup=markup)
+    else:
+        bot.send_message(message.chat.id, f'Вы не можете изучать менее 4 слов') # Кол-во изучаемых слов всегда достаточно для генерации карты
 
 @bot.callback_query_handler(func=lambda call: call.data == "delete_cancellation")
 def delete_no(call):
@@ -124,9 +146,9 @@ def delete_no(call):
 def delete_yes(call):
     with bot.retrieve_data(call.from_user.id, call.message.chat.id) as data:
         print(f'{data['translate_word']} удаляется для пользователя с chat id {call.message.chat.id}')
-        word_id = db.session.query(db.Word.id).filter(db.Word.russian_word==data['translate_word']).scalar()
-        db.session.query(db.UserWord).filter(db.UserWord.user_id==call.from_user.id, db.UserWord.word_id==word_id).delete()
-        db.session.commit()
+        word_id = session.query(db.Word.id).filter(db.Word.russian_word==data['translate_word']).scalar()
+        session.query(db.UserWord).filter(db.UserWord.user_id==call.from_user.id, db.UserWord.word_id==word_id).delete()
+        session.commit()
         buttons = []
         next_btn = types.KeyboardButton(Command.NEXT)
         add_word_btn = types.KeyboardButton(Command.ADD_WORD)
@@ -138,7 +160,6 @@ def delete_yes(call):
 @bot.message_handler(func=lambda message: message.text == Command.ADD_WORD)
 def add_word(message):
     cid = message.chat.id
-    userStep[cid] = 1
     buttons = []
     rand_btn = types.KeyboardButton('Случайное слово')
     inpt_btn = types.KeyboardButton('Ввести слово')
@@ -177,8 +198,9 @@ def show_info(message):
 
 @bot.message_handler(commands=['count'])
 def word_count(message):
-    counter = len(db.session.query(db.UserWord).filter(db.UserWord.user_id==message.chat.id).all())
+    counter = len(session.query(db.UserWord).filter(db.UserWord.user_id==message.chat.id).all())
     bot.send_message(message.chat.id, f'Количество изучаемых слов: {counter}')
+    return counter
 
 @bot.message_handler(func=lambda message: message.text == 'Случайное слово')
 def add_random_word(message):
@@ -204,21 +226,31 @@ def process_word(word):
     if len(word_str.split()) > 1:
         word_str = word_str.split()[2]
     if word_str.isalpha():
-
         if detect(word_str) == 'ru':
             russian_word = word_str
         else:
             russian_word = GoogleTranslator(source='en', target='ru').translate(word_str)
-
-        if len(db.session.query(db.Word.russian_word).filter(db.Word.russian_word==russian_word).all()) != 0:
-            if len(db.session.query(db.UserWord).join(db.Word).filter(db.Word.russian_word==russian_word, db.UserWord.user_id==cid).all()) != 0:
+        count = (
+        session.query(db.Word.russian_word)
+        .filter(db.Word.russian_word==russian_word)
+        .count()
+         )
+        if count:
+            count2= (
+                session.
+                query(db.UserWord).
+                join(db.Word).
+                filter(db.Word.russian_word==russian_word, db.UserWord.user_id==cid).
+                count()
+             )
+            if count2:
                 bot.send_message(word.from_user.id, 'Вы уже учите данное слово')
                 stop_adding(word)
             else:
-                w_id = db.session.query(db.Word.id).filter(db.Word.russian_word==russian_word).scalar()
+                w_id = session.query(db.Word.id).filter(db.Word.russian_word==russian_word).scalar()
                 new_link = db.UserWord(user_id=cid, word_id=w_id)
-                db.session.add(new_link)
-                db.session.commit()
+                session.add(new_link)
+                session.commit()
                 add_completed(word)
         else:
             translate_word = GoogleTranslator(source='ru', target='en').translate(russian_word)
@@ -226,12 +258,12 @@ def process_word(word):
                 russian_word=russian_word,
                 target_word=translate_word,
             )
-            db.session.add(added_word)
-            db.session.commit()
-            w_id = db.session.query(db.Word.id).filter(db.Word.russian_word==russian_word).scalar()
+            session.add(added_word)
+            session.commit()
+            w_id = session.query(db.Word.id).filter(db.Word.russian_word==russian_word).scalar()
             new_link = db.UserWord(user_id=cid, word_id=w_id)
-            db.session.add(new_link)
-            db.session.commit()
+            session.add(new_link)
+            session.commit()
             add_completed(word)
     else:
         bot.send_message(word.from_user.id, 'Допустимы только буквы')
@@ -243,7 +275,6 @@ def message_reply(message):
     markup = types.ReplyKeyboardMarkup(row_width=2)
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         target_word = data['target_word']
-        global buttons
         if text == target_word:
             buttons = []
             hint = show_target(data)
@@ -254,6 +285,7 @@ def message_reply(message):
             buttons.extend([next_btn, add_word_btn, delete_word_btn])
             hint = show_hint(*hint_text)
         else:
+            buttons = [types.KeyboardButton(btn) for btn in data['other_words']]
             for btn in buttons:
                 if btn.text == text:
                     if '❌' not in btn.text:
@@ -261,9 +293,14 @@ def message_reply(message):
                     break
             hint = show_hint("Допущена ошибка!",
                              f"Попробуй ещё раз вспомнить слово 🇷🇺{data['translate_word']}")
-    markup.add(*buttons)
-    bot.send_message(message.chat.id, hint, reply_markup=markup)
-
+            buttons.append(types.KeyboardButton(target_word))
+            random.shuffle(buttons)
+            next_btn = types.KeyboardButton(Command.NEXT)
+            add_word_btn = types.KeyboardButton(Command.ADD_WORD)
+            delete_word_btn = types.KeyboardButton(Command.DELETE_WORD)
+            buttons.extend([next_btn, add_word_btn, delete_word_btn])
+        markup.add(*buttons)
+        bot.send_message(message.chat.id, hint, reply_markup=markup)
 
 bot.add_custom_filter(custom_filters.StateFilter(bot))
 
